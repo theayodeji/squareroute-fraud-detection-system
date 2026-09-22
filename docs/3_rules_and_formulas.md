@@ -55,7 +55,7 @@ $$ d = R \cdot c $$
 
 ### Rule 4: `pair_dispute_velocity`
 **Goal**: Catch collusion rings where a rider and customer pair up to repeatedly report failed deliveries and split the refunded capital. This signal is invisible on a single order but mathematically obvious over time.
-* **Trigger**: Scheduled background job (or evaluated dynamically during the simulation).
+* **Trigger**: Scheduled background job (Nightly Sweep) or at `claim_filed`. *(Note: In this reference implementation, these rules run dynamically on ingestion. In production, this should be offloaded to a BullMQ Repeatable Job to prevent heavy aggregations on every GPS ping).*
 * **Mechanism**:
   1. Aggregate the `deliveries` table grouping by `rider_id` and `consumer_id` over the last 30 days (`created_at >= cutoff_date`).
   2. Count `total_deliveries` and `disputed_deliveries`.
@@ -65,7 +65,7 @@ $$ d = R \cdot c $$
 
 ### Rule 5 & 6: `rider_dispute_velocity` & `consumer_dispute_velocity`
 **Goal**: Identify globally high-risk individual entities (riders who constantly lose food, or consumers who constantly claim non-arrival) independent of who they are paired with.
-* **Trigger**: Scheduled background job.
+* **Trigger**: Scheduled background job (Nightly Sweep). *(Note: Similar to Rule 4, these are evaluated dynamically in the current implementation but belong in a cron scheduler for production).*
 * **Mechanism**:
   1. Aggregate the `deliveries` table for a specific `rider_id` (or `consumer_id`) over the rolling window (e.g., 30 days).
   2. Count `total_deliveries` and `disputed_deliveries`.
